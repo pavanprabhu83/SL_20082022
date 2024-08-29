@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+    
+    environment {
+        AWS_DEFAULT_REGION = 'us-west-2' // Replace with your preferred AWS region
+        S3_BUCKET_NAME = 'your-s3-bucket-name' // Replace with your S3 bucket name
+    }
+
+    stages {
+        stage('List S3 Objects') {
+            steps {
+                script {
+                    // Load credentials from Jenkins secret (assumes JSON format)
+                    def awsCreds = readJSON text: credentials('aws-credentials')
+                    
+                    def awsAccessKeyId = awsCreds['AWS_ACCESS_KEY_ID']
+                    def awsSecretAccessKey = awsCreds['AWS_SECRET_ACCESS_KEY']
+                    def awsSessionToken = awsCreds['AWS_SESSION_TOKEN']
+
+                    // Ensure AWS CLI is installed
+                    sh 'aws --version'
+                    
+                    // List objects in the specified S3 bucket using the provided credentials
+                    sh """
+                    aws s3 ls s3://$S3_BUCKET_NAME --recursive \
+                      --region $AWS_DEFAULT_REGION \
+                      --access-key $awsAccessKeyId \
+                      --secret-key $awsSecretAccessKey \
+                      --session-token $awsSessionToken
+                    """
+                }
+            }
+        }
+    }
+}
